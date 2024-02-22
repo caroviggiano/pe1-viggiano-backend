@@ -17,49 +17,81 @@ const products = [{"id":1, "title":"producto1", "description":"description1", "p
 // Rutas de los productos
 
 app.get ("/api/products/", (req, res) => {
-
-    res.send(products)
-
     // (GET) Mostrar todos los productos
-    
-})
+    res.send(products);
+});
 
 app.get ("/api/products/:pid/", (req, res) => {
     // (GET) Mostrar producto que coincida con :pid
-})
+    const productId = parseInt(req.params.pid);
+    const product = products.find(p => p.id === productId);
+
+    if (product) {
+        res.send(product);
+    } else {
+        res.status(404).send("Producto no encontrado");
+    }
+});
 
 app.post ("/api/products/", (req, res) => {
     // (POST) Crear un producto nuevo
-})
+    const newProduct = req.body;
+    newProduct.id = products.length + 1; // Asignar un nuevo ID
+    products.push(newProduct);
+
+    res.send(newProduct);
+});
 
 app.put ("/api/products/:pid/", (req, res) => {
     // (PUT) Editar producto que coincida con :pid
-})
+    const productId = parseInt(req.params.pid);
+    const updatedProduct = req.body;
+
+    const index = products.findIndex(p => p.id === productId);
+
+    if (index !== -1) {
+        products[index] = { ...products[index], ...updatedProduct };
+        res.send(products[index]);
+    } else {
+        res.status(404).send("Producto no encontrado");
+    }
+});
 
 app.delete ("/api/products/:pid/", (req, res) => {
     // (DELETE) Eliminar producto que coincida con :pid
-})
+    const productId = parseInt(req.params.pid);
+    const index = products.findIndex(p => p.id === productId);
+
+    if (index !== -1) {
+        const deletedProduct = products.splice(index, 1);
+        res.send(deletedProduct);
+    } else {
+        res.status(404).send("Producto no encontrado");
+    }
+});
 
 // Rutas del carrito
 
-app.post ("/api/carts/", (req, res) => {
+app.post("/api/carts/", (req, res) => {
     // (POST) Crear un nuevo carrito
-    let carrito = fs.readFileSync(pathCart, "utf-8")
-    let parsedCart = JSON.parse (carrito)
+    let carrito = fs.readFileSync(pathCart, "utf-8");
+    let parsedCart = JSON.parse(carrito);
 
-    const ID = randomUUID()
+    const ID = randomUUID();
 
     let cart = {
         id: ID,
-        products: []
-    }
+        products: [],
+    };
 
-    parsedCart.push (cart)
-    let data = JSON.stringify(parsedCart)
-    writeFileSync(pathCart, data, null)
+    parsedCart = Array.isArray(parsedCart) ? parsedCart : [];
+    parsedCart.push(cart);
 
-    res.send("Carrito creado")
-})
+    let data = JSON.stringify(parsedCart);
+    writeFileSync(pathCart, data);
+
+    res.send("Carrito creado");
+});
 
 app.get ("/api/carts/:cid/", (req, res) => {
     // (GET) Listar los productos del carrito
@@ -73,20 +105,30 @@ app.get ("/api/carts/:cid/", (req, res) => {
     res.send(data)
 })
 
-app.post ("/api/carts/:cid/product/:pid/", (req, res) => {
+app.post("/api/carts/:cid/product/:pid/", (req, res) => {
     // (POST) Agrgar un producto nuevo al carrito seleccionado
+    let cart = fs.readFileSync(pathCart, "utf-8");
+    let parsedCart = JSON.parse(cart);
 
-    let cart = fs.readFileSync(pathCart, "utf-8")
-    let parsedCart = JSON.parse (carrito)
+    let cid = req.params.cid;
+    let foundCartIndex = parsedCart.findIndex((c) => c.id === cid);
 
-    let cid = req.params.cid
-    let foundCart= parsedCart.findIndex((c)=> c.id === cid)
+    if (foundCartIndex !== -1) {
+        let pid = req.params.pid;
+        let foundProduct = products.find((p) => p.id === parseInt(pid));
 
-    parsedCart[foundCart].products.push(foundProduct)
-    let result = parsedCart
+        if (foundProduct) {
+            parsedCart[foundCartIndex].products.push(foundProduct);
+            let result = parsedCart;
 
-    let pid = req.params.pid
-    let foundProduct= products.find((p)=> p.id === pid)
-    res.send("OK")
-})
+            let data = JSON.stringify(result);
+            writeFileSync(pathCart, data);
 
+            res.send("OK");
+        } else {
+            res.status(404).send("Producto no encontrado");
+        }
+    } else {
+        res.status(404).send("Carrito no encontrado");
+    }
+});
