@@ -79,10 +79,13 @@ app.post ("/api/carts/:cid/product/:pid/", (req, res) => {
     let cart = fs.readFileSync(pathCart, "utf-8")
     let parsedCart = JSON.parse (carrito)
 
-    let cid = parseInt(req.params.cid)
-    let foundCart= parsedCart.find((c)=> c.id === cid)
+    let cid = req.params.cid
+    let foundCart= parsedCart.findIndex((c)=> c.id === cid)
 
-    let pid = parseInt(req.params.pid)
+    parsedCart[foundCart].products.push(foundProduct)
+    let result = parsedCart
+
+    let pid = req.params.pid
     let foundProduct= products.find((p)=> p.id === pid)
     res.send("OK")
 })
